@@ -131,7 +131,6 @@ void insert(hashtable *h, int id, char *name, int age, bool verified, int number
     newitem->verified = verified;
     newitem->name = strdup(name);
     newitem->email = strdup(email);
-
     hashArr->array[hashArr->size++] = newitem;
 }
 
