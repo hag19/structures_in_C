@@ -14,13 +14,13 @@ typedef struct items {
 } items;
 
 typedef struct hasharray {
-    struct items** array;
+    items** array;   // Array of items
     int size;
     int capacity;
 } hasharray;
 
 typedef struct hashtable {
-    struct hasharray** arrayP;
+    hasharray** arrayP; // Array of hash arrays
     int capacity;
 } hashtable;
 
@@ -39,16 +39,23 @@ int main() {
         fprintf(stderr, "Failed to create hashtable.\n");
         return EXIT_FAILURE;
     }
- 
+
+    // Example insertions
+    insert(&h, 5, "John", 25, true, 123456, "john@example.com");
+    insert(&h, 15, "Alice", 30, false, 987654, "alice@example.com");
+    insert(&h, 25, "Bob", 40, true, 111222, "bob@example.com");
+
+    // Searching for some values
     search(&h, 5);
     search(&h, 15);
     search(&h, 25);
-    search(&h, 12);
-    search(&h, 66);
-    search(&h, 3);
-    search(&h, 99);
+    search(&h, 100); // Non-existing value
 
-    freeM(&h);
+    // Deleting a value
+    delete(&h, 15);
+    search(&h, 15); // Should print not found
+
+    freeM(&h); // Free allocated memory
     return EXIT_SUCCESS;
 }
 
@@ -76,10 +83,8 @@ void search(hashtable *h, int id) {
     for (int i = 0; i < hashArr->size; i++) {
         if (hashArr->array[i]->id == id) {
             items *person = hashArr->array[i];
-            printf("address of the structure hasharray %p, then address of the array %p, then the hashcode %d, then address of the structure of this person %p, then index itself %d, your value %d\n",
-                &hashArr, hashArr->array, code, &hashArr->array[i], i, id);
-            printf("id: %d, name: %s, age: %d, verified: %d, phone: %d, email: %s\n",
-                person->id, person->name, person->age, person->verified, person->number, person->email);
+            printf("Found item: id: %d, name: %s, age: %d, verified: %d, phone: %d, email: %s\n",
+                   person->id, person->name, person->age, person->verified, person->number, person->email);
             c++;
         }
     }
@@ -97,22 +102,19 @@ void insert(hashtable *h, int id, char *name, int age, bool verified, int number
     }
     int code = hashcode(id, h->capacity);
     if (code < 0 || code >= h->capacity) {
-        freeM(h);
         fprintf(stderr, "Error: Hash code out of bounds.\n");
         exit(EXIT_FAILURE);
     }
     hasharray *hashArr = h->arrayP[code];
     if (hashArr == NULL) {
-        freeM(h);
         fprintf(stderr, "Error: hashArr is NULL at index %d.\n", code);
         exit(EXIT_FAILURE);
     }
 
     if (hashArr->size == hashArr->capacity) {
         hashArr->capacity *= 2;
-        struct items **newArray = realloc(hashArr->array, hashArr->capacity * sizeof(struct items *));
+        items **newArray = realloc(hashArr->array, hashArr->capacity * sizeof(items *));
         if (newArray == NULL) {
-            freeM(h);
             fprintf(stderr, "Error: Failed to allocate memory.\n");
             exit(EXIT_FAILURE);
         }
@@ -121,7 +123,6 @@ void insert(hashtable *h, int id, char *name, int age, bool verified, int number
 
     items *newitem = malloc(sizeof(items));
     if (newitem == NULL) {
-        freeM(h);
         fprintf(stderr, "Error: Failed to allocate memory for the item struct.\n");
         exit(EXIT_FAILURE);
     }
@@ -157,7 +158,7 @@ bool create(hashtable *h, int capacity) {
         return false;
     }
 
-    h->arrayP = malloc(sizeof(struct hasharray*) * capacity);
+    h->arrayP = malloc(sizeof(hasharray*) * capacity);
     if (h->arrayP == NULL) {
         return false;
     }
@@ -165,21 +166,20 @@ bool create(hashtable *h, int capacity) {
     h->capacity = capacity;
 
     for (int i = 0; i < capacity; i++) {
-        h->arrayP[i] = malloc(sizeof(struct hasharray));
+        h->arrayP[i] = malloc(sizeof(hasharray));
         if (h->arrayP[i] == NULL) {
             freeM(h);
             return false;
         }
-        
-        h->arrayP[i]->array = malloc(sizeof(struct items*) * capacity);
+
+        h->arrayP[i]->array = malloc(sizeof(items*) * capacity);
         if (h->arrayP[i]->array == NULL) {
-            freeM(h);  
+            freeM(h);
             return false;
         }
-        
+
         h->arrayP[i]->size = 0;
         h->arrayP[i]->capacity = capacity;
-        
         for (int j = 0; j < capacity; j++) {
             h->arrayP[i]->array[j] = NULL;
         }
@@ -221,5 +221,6 @@ void delete(hashtable *h, int id) {
             return;
         }
     }
-printf("Couldn't find person with this ID: %D.\n",id);
+
+    printf("Couldn't find person with this ID: %d.\n", id);
 }
